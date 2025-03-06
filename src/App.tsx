@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, ExternalLink, PlusCircle, MinusCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, ExternalLink, PlusCircle, MinusCircle, Sun, Moon } from 'lucide-react';
 
 type Store = {
   id: string;
@@ -78,10 +78,28 @@ const partTypes = [
 function App() {
   const [parts, setParts] = useState<Part[]>(initialParts);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return false;
+  });
   const [newPart, setNewPart] = useState<Partial<Part>>({
     type: partTypes[0],
     stores: [{ id: Date.now().toString(), name: '', url: '', price: '', inStock: false }]
   });
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
+
+  const toggleDarkMode = () => {
+    setIsDark(!isDark);
+  };
 
   const handleAddStore = () => {
     setNewPart({
@@ -162,87 +180,95 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 transition-colors duration-200">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">PC Parts Tracker</h1>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
-            >
-              <Plus size={20} />
-              Add Part
-            </button>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">PC Parts Tracker</h1>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={toggleDarkMode}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                {isDark ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
+              >
+                <Plus size={20} />
+                Add Part
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Component</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Best Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Checked</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <tr className="bg-gray-50 dark:bg-gray-700">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Component</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Best Price</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Availability</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Last Checked</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {parts.map(part => (
                   <React.Fragment key={part.id}>
-                    <tr className="hover:bg-gray-50">
+                    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">{part.name}</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">{part.name}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                           {part.type}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
+                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                         {getBestPrice(part.stores)}
                       </td>
                       <td className="px-6 py-4">
                         <span
                           className={`px-3 py-1 rounded-full text-sm font-medium ${
                             getAvailabilityStatus(part.stores)
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                              ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                              : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
                           }`}
                         >
                           {getAvailabilityStatus(part.stores) ? 'Available' : 'Not Available'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{part.lastChecked}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{part.lastChecked}</td>
                       <td className="px-6 py-4 text-sm font-medium">
                         <button
                           onClick={() => handleDeletePart(part.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                         >
                           <Trash2 size={18} />
                         </button>
                       </td>
                     </tr>
-                    <tr className="bg-gray-50">
+                    <tr className="bg-gray-50 dark:bg-gray-700">
                       <td colSpan={6} className="px-6 py-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {part.stores.map(store => (
                             <div
                               key={store.id}
-                              className="bg-white p-4 rounded-lg shadow-sm flex items-center justify-between"
+                              className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm flex items-center justify-between"
                             >
                               <div>
-                                <div className="font-medium">{store.name}</div>
-                                <div className="text-sm text-gray-500">{store.price}</div>
+                                <div className="font-medium text-gray-900 dark:text-white">{store.name}</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">{store.price}</div>
                               </div>
                               <div className="flex items-center gap-3">
                                 <button
                                   onClick={() => toggleStock(part.id, store.id)}
                                   className={`px-3 py-1 rounded-full text-xs font-medium ${
                                     store.inStock
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-red-100 text-red-800'
+                                      ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                                      : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
                                   }`}
                                 >
                                   {store.inStock ? 'In Stock' : 'Out of Stock'}
@@ -251,7 +277,7 @@ function App() {
                                   href={store.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-blue-600 hover:text-blue-900"
+                                  className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
                                 >
                                   <ExternalLink size={18} />
                                 </a>
@@ -271,24 +297,24 @@ function App() {
 
       {showAddForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
-            <h2 className="text-xl font-bold mb-4">Add New Part</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Add New Part</h2>
             <form onSubmit={handleAddPart}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Name</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
                   <input
                     type="text"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                     value={newPart.name || ''}
                     onChange={e => setNewPart({ ...newPart, name: e.target.value })}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Type</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Type</label>
                   <select
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                     value={newPart.type}
                     onChange={e => setNewPart({ ...newPart, type: e.target.value })}
                   >
@@ -300,11 +326,11 @@ function App() {
 
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium">Stores</h3>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">Stores</h3>
                     <button
                       type="button"
                       onClick={handleAddStore}
-                      className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1"
                     >
                       <PlusCircle size={18} />
                       Add Store
@@ -312,14 +338,14 @@ function App() {
                   </div>
                   
                   {newPart.stores?.map((store, index) => (
-                    <div key={store.id} className="bg-gray-50 p-4 rounded-lg">
+                    <div key={store.id} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                       <div className="flex justify-between items-start mb-4">
-                        <h4 className="text-sm font-medium">Store #{index + 1}</h4>
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-white">Store #{index + 1}</h4>
                         {newPart.stores!.length > 1 && (
                           <button
                             type="button"
                             onClick={() => handleRemoveStore(store.id)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                           >
                             <MinusCircle size={18} />
                           </button>
@@ -327,20 +353,20 @@ function App() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Store Name</label>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Store Name</label>
                           <input
                             type="text"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                             value={store.name}
                             onChange={e => handleStoreChange(store.id, 'name', e.target.value)}
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Price</label>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price</label>
                           <input
                             type="text"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                             value={store.price}
                             onChange={e => handleStoreChange(store.id, 'price', e.target.value)}
                             placeholder="$0.00"
@@ -348,10 +374,10 @@ function App() {
                           />
                         </div>
                         <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-gray-700">URL</label>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">URL</label>
                           <input
                             type="url"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                             value={store.url}
                             onChange={e => handleStoreChange(store.id, 'url', e.target.value)}
                             required
@@ -361,11 +387,11 @@ function App() {
                           <label className="flex items-center">
                             <input
                               type="checkbox"
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:bg-gray-700"
                               checked={store.inStock}
                               onChange={e => handleStoreChange(store.id, 'inStock', e.target.checked)}
                             />
-                            <span className="ml-2 text-sm text-gray-900">In Stock</span>
+                            <span className="ml-2 text-sm text-gray-900 dark:text-white">In Stock</span>
                           </label>
                         </div>
                       </div>
@@ -377,7 +403,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Cancel
                 </button>
