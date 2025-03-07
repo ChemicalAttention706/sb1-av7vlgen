@@ -1,5 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, ExternalLink, PlusCircle, MinusCircle, Sun, Moon } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, PlusCircle, MinusCircle, Sun, Moon, SlidersHorizontal, Bell } from 'lucide-react';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+type PriceHistory = {
+  date: string;
+  price: number;
+};
 
 type Store = {
   id: string;
@@ -7,6 +33,8 @@ type Store = {
   url: string;
   price: string;
   inStock: boolean;
+  priceHistory: PriceHistory[];
+  priceAlert?: number;
 };
 
 type Part = {
@@ -15,6 +43,7 @@ type Part = {
   type: string;
   stores: Store[];
   lastChecked: string;
+  compatibility?: string[];
 };
 
 const initialParts: Part[] = [
@@ -28,17 +57,28 @@ const initialParts: Part[] = [
         name: 'Newegg',
         price: '$449.99',
         url: 'https://www.newegg.com',
-        inStock: true
+        inStock: true,
+        priceHistory: [
+          { date: '2024-01-01', price: 469.99 },
+          { date: '2024-02-01', price: 459.99 },
+          { date: '2024-03-01', price: 449.99 }
+        ]
       },
       {
         id: '1b',
         name: 'Amazon',
         price: '$459.99',
         url: 'https://www.amazon.com',
-        inStock: false
+        inStock: false,
+        priceHistory: [
+          { date: '2024-01-01', price: 479.99 },
+          { date: '2024-02-01', price: 469.99 },
+          { date: '2024-03-01', price: 459.99 }
+        ]
       }
     ],
-    lastChecked: new Date().toLocaleDateString()
+    lastChecked: new Date().toLocaleDateString(),
+    compatibility: ['AM5 motherboards']
   },
   {
     id: '2',
@@ -50,17 +90,28 @@ const initialParts: Part[] = [
         name: 'Best Buy',
         price: '$599.99',
         url: 'https://www.bestbuy.com',
-        inStock: false
+        inStock: false,
+        priceHistory: [
+          { date: '2024-01-01', price: 619.99 },
+          { date: '2024-02-01', price: 609.99 },
+          { date: '2024-03-01', price: 599.99 }
+        ]
       },
       {
         id: '2b',
         name: 'Micro Center',
         price: '$589.99',
         url: 'https://www.microcenter.com',
-        inStock: true
+        inStock: true,
+        priceHistory: [
+          { date: '2024-01-01', price: 609.99 },
+          { date: '2024-02-01', price: 599.99 },
+          { date: '2024-03-01', price: 589.99 }
+        ]
       }
     ],
-    lastChecked: new Date().toLocaleDateString()
+    lastChecked: new Date().toLocaleDateString(),
+    compatibility: ['PCIe 4.0 x16']
   }
 ];
 
@@ -78,6 +129,9 @@ const partTypes = [
 function App() {
   const [parts, setParts] = useState<Part[]>(initialParts);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedType, setSelectedType] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'price' | 'availability'>('name');
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark');
@@ -86,7 +140,14 @@ function App() {
   });
   const [newPart, setNewPart] = useState<Partial<Part>>({
     type: partTypes[0],
-    stores: [{ id: Date.now().toString(), name: '', url: '', price: '', inStock: false }]
+    stores: [{ 
+      id: Date.now().toString(), 
+      name: '', 
+      url: '', 
+      price: '', 
+      inStock: false,
+      priceHistory: []
+    }]
   });
 
   useEffect(() => {
@@ -109,7 +170,8 @@ function App() {
         name: '',
         url: '',
         price: '',
-        inStock: false
+        inStock: false,
+        priceHistory: []
       }]
     });
   };
@@ -122,7 +184,7 @@ function App() {
     });
   };
 
-  const handleStoreChange = (storeId: string, field: keyof Store, value: string | boolean) => {
+  const handleStoreChange = (storeId: string, field: keyof Store, value: string | boolean | number) => {
     setNewPart({
       ...newPart,
       stores: (newPart.stores || []).map(store =>
@@ -145,7 +207,14 @@ function App() {
       setShowAddForm(false);
       setNewPart({
         type: partTypes[0],
-        stores: [{ id: Date.now().toString(), name: '', url: '', price: '', inStock: false }]
+        stores: [{ 
+          id: Date.now().toString(), 
+          name: '', 
+          url: '', 
+          price: '', 
+          inStock: false,
+          priceHistory: []
+        }]
       });
     }
   };
@@ -179,13 +248,61 @@ function App() {
     return stores.some(store => store.inStock);
   };
 
+  const getTotalBuildCost = () => {
+    return parts.reduce((total, part) => {
+      const bestPrice = parseFloat(getBestPrice(part.stores).replace('$', ''));
+      return total + bestPrice;
+    }, 0);
+  };
+
+  const filteredAndSortedParts = parts
+    .filter(part => selectedType === 'all' || part.type === selectedType)
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'price':
+          return parseFloat(getBestPrice(a.stores).replace('$', '')) - parseFloat(getBestPrice(b.stores).replace('$', ''));
+        case 'availability':
+          return getAvailabilityStatus(b.stores) ? 1 : -1;
+        default:
+          return 0;
+      }
+    });
+
+  const setPriceAlert = (partId: string, storeId: string, price: number) => {
+    setParts(parts.map(part =>
+      part.id === partId
+        ? {
+            ...part,
+            stores: part.stores.map(store =>
+              store.id === storeId
+                ? { ...store, priceAlert: price }
+                : store
+            )
+          }
+        : part
+    ));
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 transition-colors duration-200">
       <div className="max-w-7xl mx-auto">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">PC Parts Tracker</h1>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">PC Parts Tracker</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">
+                Total Build Cost: <span className="font-semibold">${getTotalBuildCost().toFixed(2)}</span>
+              </p>
+            </div>
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                <SlidersHorizontal size={20} />
+              </button>
               <button
                 onClick={toggleDarkMode}
                 className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -202,6 +319,42 @@ function App() {
             </div>
           </div>
 
+          {showFilters && (
+            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="flex flex-wrap gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Filter by Type
+                  </label>
+                  <select
+                    className="rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                    value={selectedType}
+                    onChange={(e) => setSelectedType(e.target.value)}
+                  >
+                    <option value="all">All Types</option>
+                    {partTypes.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Sort by
+                  </label>
+                  <select
+                    className="rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'name' | 'price' | 'availability')}
+                  >
+                    <option value="name">Name</option>
+                    <option value="price">Price</option>
+                    <option value="availability">Availability</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -215,11 +368,18 @@ function App() {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {parts.map(part => (
+                {filteredAndSortedParts.map(part => (
                   <React.Fragment key={part.id}>
                     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">{part.name}</div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{part.name}</div>
+                          {part.compatibility && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              Compatible with: {part.compatibility.join(', ')}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
@@ -252,38 +412,82 @@ function App() {
                     </tr>
                     <tr className="bg-gray-50 dark:bg-gray-700">
                       <td colSpan={6} className="px-6 py-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {part.stores.map(store => (
-                            <div
-                              key={store.id}
-                              className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm flex items-center justify-between"
-                            >
-                              <div>
-                                <div className="font-medium text-gray-900 dark:text-white">{store.name}</div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">{store.price}</div>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {part.stores.map(store => (
+                              <div
+                                key={store.id}
+                                className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm"
+                              >
+                                <div className="flex justify-between items-start mb-3">
+                                  <div>
+                                    <div className="font-medium text-gray-900 dark:text-white">{store.name}</div>
+                                    <div className="text-sm text-gray-500 dark:text-gray-400">{store.price}</div>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      onClick={() => toggleStock(part.id, store.id)}
+                                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                        store.inStock
+                                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                                          : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                                      }`}
+                                    >
+                                      {store.inStock ? 'In Stock' : 'Out of Stock'}
+                                    </button>
+                                    <a
+                                      href={store.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
+                                    >
+                                      <ExternalLink size={18} />
+                                    </a>
+                                  </div>
+                                </div>
+                                
+                                <div className="mb-3">
+                                  <Line
+                                    data={{
+                                      labels: store.priceHistory.map(h => h.date),
+                                      datasets: [
+                                        {
+                                          label: 'Price History',
+                                          data: store.priceHistory.map(h => h.price),
+                                          borderColor: '#3b82f6',
+                                          tension: 0.1
+                                        }
+                                      ]
+                                    }}
+                                    options={{
+                                      responsive: true,
+                                      plugins: {
+                                        legend: {
+                                          display: false
+                                        }
+                                      },
+                                      scales: {
+                                        y: {
+                                          beginAtZero: false
+                                        }
+                                      }
+                                    }}
+                                  />
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="number"
+                                    placeholder="Set price alert"
+                                    className="w-32 px-2 py-1 text-sm rounded border dark:bg-gray-700 dark:border-gray-600"
+                                    value={store.priceAlert || ''}
+                                    onChange={(e) => setPriceAlert(part.id, store.id, parseFloat(e.target.value))}
+                                  />
+                                  <Bell size={16} className="text-gray-500 dark:text-gray-400" />
+                                </div>
                               </div>
-                              <div className="flex items-center gap-3">
-                                <button
-                                  onClick={() => toggleStock(part.id, store.id)}
-                                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                    store.inStock
-                                      ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                                      : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-                                  }`}
-                                >
-                                  {store.inStock ? 'In Stock' : 'Out of Stock'}
-                                </button>
-                                <a
-                                  href={store.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
-                                >
-                                  <ExternalLink size={18} />
-                                </a>
-                              </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -291,6 +495,13 @@ function App() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+            <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">Build Summary</h2>
+            <div className="text-sm text-blue-800 dark:text-blue-200">
+              Total Cost: <span className="font-bold">${getTotalBuildCost().toFixed(2)}</span>
+            </div>
           </div>
         </div>
       </div>
