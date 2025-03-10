@@ -410,7 +410,7 @@ function App() {
                                   <input
                                     type="number"
                                     placeholder="Set price alert"
-                                    className="w-32 px-2 py-1 text-sm rounded border dark:bg-gray-700 dark:border-gray-600"
+                                    className="w-32 px-2 py-1 text-sm rounded border dark:bg-gray-600 dark:border-gray-500 dark:text-white dark:placeholder-gray-400"
                                     value={store.priceAlert || ''}
                                     onChange={(e) => setPriceAlert(part.id, store.id, parseFloat(e.target.value))}
                                   />
@@ -447,7 +447,7 @@ function App() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
                   <input
                     type="text"
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:text-white dark:placeholder-gray-400"
                     value={newPart.name || ''}
                     onChange={e => setNewPart({ ...newPart, name: e.target.value })}
                     required
@@ -456,7 +456,7 @@ function App() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Type</label>
                   <select
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:text-white"
                     value={newPart.type}
                     onChange={e => setNewPart({ ...newPart, type: e.target.value })}
                   >
@@ -498,7 +498,7 @@ function App() {
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Store Name</label>
                           <input
                             type="text"
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:text-white dark:placeholder-gray-400"
                             value={store.name}
                             onChange={e => handleStoreChange(store.id, 'name', e.target.value)}
                             required
@@ -508,7 +508,7 @@ function App() {
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price</label>
                           <input
                             type="text"
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:text-white dark:placeholder-gray-400"
                             value={store.price}
                             onChange={e => handleStoreChange(store.id, 'price', e.target.value)}
                             placeholder="$0.00"
@@ -519,7 +519,7 @@ function App() {
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">URL</label>
                           <input
                             type="url"
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:text-white dark:placeholder-gray-400"
                             value={store.url}
                             onChange={e => handleStoreChange(store.id, 'url', e.target.value)}
                             required
@@ -529,7 +529,7 @@ function App() {
                           <label className="flex items-center">
                             <input
                               type="checkbox"
-                              className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:bg-gray-700"
+                              className="rounded border-gray-300 dark:border-gray-500 text-blue-600 focus:ring-blue-500 dark:bg-gray-600"
                               checked={store.inStock}
                               onChange={e => handleStoreChange(store.id, 'inStock', e.target.checked)}
                             />
