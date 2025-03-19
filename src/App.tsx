@@ -35,6 +35,7 @@ type Store = {
   inStock: boolean;
   priceHistory: PriceHistory[];
   priceAlert?: number;
+  tempPrice?: string;
 };
 
 type Part = {
@@ -124,15 +125,35 @@ function App() {
     });
   };
 
+  const updatePriceHistory = (store: Store, newPrice: string) => {
+    const priceNum = parseFloat(newPrice.replace('$', ''));
+    if (isNaN(priceNum)) return store.priceHistory;
+
+    const lastEntry = store.priceHistory[store.priceHistory.length - 1];
+    const currentDate = new Date().toLocaleDateString();
+
+    if (!lastEntry || lastEntry.price !== priceNum || lastEntry.date !== currentDate) {
+      return [...store.priceHistory, {date: currentDate, price, priceNum}];
+    }
+
+    return store.priceHistory;
+  };
+  
   const handleAddPart = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPart.name && newPart.stores?.every(store => store.name && store.url && store.price)) {
+      const storesWithHistory = newPart.stores.map(store => ({
+        ...store,
+        priceHistory: updatePriceHistory(store, store.price)
+      }));
+      
       setParts([
         ...parts,
         {
           ...newPart,
           id: Date.now().toString(),
           lastChecked: new Date().toLocaleDateString()
+          stores: storesWithHistory
         } as Part
       ]);
       setShowAddForm(false);
@@ -153,6 +174,55 @@ function App() {
   const handleDeletePart = (id: string) => {
     setParts(parts.filter(part => part.id !== id));
   };
+
+  const handlePriceInputChange = (partId: string, storeId: string, value: string) => {
+    setParts(parts.map(part =>
+      part.id === partId
+        ? {
+            ...part,
+            stores: part.stores.map(store =>
+              store.id === storeId
+                ? { ...store, tempPrice: value }
+                : store
+              )
+        }
+      : part
+    ));
+  };
+
+  const handlePriceUpdate = (partId: string, storeId: string, newPrice: string) =>
+    setParts(parts.map(part =>
+      part.id === partId
+        ? {
+            ...part,
+            lastChecked: new Date().toLocaleDateString(),
+            stores: part.store.map(store =>
+              store.id === storeId
+                ? {
+                    ...store,
+                    price: newPrice,
+                    tempPrice: undefined,
+                    priceHistory: updatePriceHistory(store, newPrice)
+                }
+              : store
+            )
+          }
+         : part
+      ));
+  };
+
+  const handlePriceKeyDown = (
+    e: React.KeyBoardEvent<HTMLInputElement>,
+    partId: string,
+    storeId: string,
+    value: string
+    ) => {
+      if (e.key === 'Enter') {
+        e.PreventDefault();
+        handlePriceUpdate(partId, storeId, value);
+        (e.target as HTMLIputElement).blur();
+      }
+    };
 
   const toggleStock = (partId: string, storeId: string) => {
     setParts(parts.map(part =>
@@ -353,7 +423,15 @@ function App() {
                                 <div className="flex justify-between items-start mb-3">
                                   <div>
                                     <div className="font-medium text-gray-900 dark:text-white">{store.name}</div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">{store.price}</div>
+                                    <input
+                                      type="text"
+                                      className="mt-1 px-2 py-1 text-sm rounded border dark:bg-dark-gray-700 dark:border-gray-600 dark:text-white"
+                                      value={store.tempPrice !== undefined ? store.tempPrice: store.price}
+                                      onChange={(e) => handlePriceInputChange(part.id, store.id, e.target.value)}
+                                      onBlure={(e) => handlePriceUpdate(part.id, store.id, e.currentTarget.value)}
+                                      onKeyDown={(e) => handlePriceKeyDown(e, part.id, store.id, e.currentTarget.value)}
+                                      placeholder="$0.00"
+                                    />
                                   </div>
                                   <div className="flex items-center gap-3">
                                     <button
@@ -399,7 +477,21 @@ function App() {
                                       },
                                       scales: {
                                         y: {
-                                          beginAtZero: false
+                                          beginAtZero: false,
+                                          grid: {
+                                            color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                                          },
+                                          ticks: {
+                                            color: isDark ? '#9ca3af' : '#4b5563'
+                                          }
+                                        },
+                                        x: {
+                                          grid: {
+                                            color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                                          },
+                                          ticks: {
+                                            color: isDark ? '#9ca3af' : '#4b5563'
+                                          }
                                         }
                                       }
                                     }}
