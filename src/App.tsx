@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, ExternalLink, PlusCircle, MinusCircle, Sun, Moon, SlidersHorizontal, Bell, Save, FolderOpen } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -505,7 +506,7 @@ function App() {
                                       {store.inStock ? 'In Stock' : 'Out of Stock'}
                                     </button>
                                     <a
-                                      href={store.url}
+                                      href={DOMPurify.sanitize(store.url)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
