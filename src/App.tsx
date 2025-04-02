@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, ExternalLink, PlusCircle, MinusCircle, Sun, Moon, SlidersHorizontal, Bell } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, PlusCircle, MinusCircle, Sun, Moon, SlidersHorizontal, Bell, Save, FolderOpen } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -47,6 +47,13 @@ type Part = {
   compatibility?: string[];
 };
 
+type SavedBuild = {
+  id: string;
+  name: string;
+  date: string;
+  parts: Part[];
+};
+
 const partTypes = [
   'CPU',
   'GPU',
@@ -59,9 +66,13 @@ const partTypes = [
 ];
 
 function App() {
-  const [parts, setParts] = useState<Part[]>(initialParts);
+  const [parts, setParts] = useState<Part[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showLoadDialog, setShowLoadDialog] = useState(false);
+  const [buildName, setBuildName] = useState('');
+  const [savedBuilds, setSavedBuilds] = useState<SavedBuild[]>([]);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'name' | 'price' | 'availability'>('name');
   const [isDark, setIsDark] = useState(() => {
@@ -83,6 +94,13 @@ function App() {
   });
 
   useEffect(() => {
+    const loadedBuilds = localStorage.getItem('savedBuilds');
+    if (loadedBuilds) {
+      setSavedBuilds(JSON.parse(loadedBuilds));
+    }
+  }, []);
+
+  useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
     } else {
@@ -92,6 +110,34 @@ function App() {
 
   const toggleDarkMode = () => {
     setIsDark(!isDark);
+  };
+
+  const handleSaveBuild = () => {
+    if (!buildName.trim()) return;
+
+    const newBuild: SavedBuild = {
+      id: Date.now().toString(),
+      name: buildName,
+      date: new Date().toLocaleDateString(),
+      parts: parts
+    };
+
+    const updatedBuilds = [...savedBuilds, newBuild];
+    setSavedBuilds(updatedBuilds);
+    localStorage.setItem('savedBuilds', JSON.stringify(updatedBuilds));
+    setBuildName('');
+    setShowSaveDialog(false);
+  };
+
+  const handleLoadBuild = (build: SavedBuild) => {
+    setParts(build.parts);
+    setShowLoadDialog(false);
+  };
+
+  const handleDeleteBuild = (buildId: string) => {
+    const updatedBuilds = savedBuilds.filter(build => build.id !== buildId);
+    setSavedBuilds(updatedBuilds);
+    localStorage.setItem('savedBuilds', JSON.stringify(updatedBuilds));
   };
 
   const handleAddStore = () => {
@@ -131,14 +177,14 @@ function App() {
 
     const lastEntry = store.priceHistory[store.priceHistory.length - 1];
     const currentDate = new Date().toLocaleDateString();
-
+    
     if (!lastEntry || lastEntry.price !== priceNum || lastEntry.date !== currentDate) {
-      return [...store.priceHistory, {date: currentDate, price, priceNum}];
+      return [...store.priceHistory, { date: currentDate, price: priceNum }];
     }
-
+    
     return store.priceHistory;
   };
-  
+
   const handleAddPart = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPart.name && newPart.stores?.every(store => store.name && store.url && store.price)) {
@@ -146,13 +192,13 @@ function App() {
         ...store,
         priceHistory: updatePriceHistory(store, store.price)
       }));
-      
+
       setParts([
         ...parts,
         {
           ...newPart,
           id: Date.now().toString(),
-          lastChecked: new Date().toLocaleDateString()
+          lastChecked: new Date().toLocaleDateString(),
           stores: storesWithHistory
         } as Part
       ]);
@@ -184,45 +230,45 @@ function App() {
               store.id === storeId
                 ? { ...store, tempPrice: value }
                 : store
-              )
-        }
-      : part
+            )
+          }
+        : part
     ));
   };
 
-  const handlePriceUpdate = (partId: string, storeId: string, newPrice: string) =>
+  const handlePriceUpdate = (partId: string, storeId: string, newPrice: string) => {
     setParts(parts.map(part =>
       part.id === partId
         ? {
             ...part,
             lastChecked: new Date().toLocaleDateString(),
-            stores: part.store.map(store =>
+            stores: part.stores.map(store =>
               store.id === storeId
-                ? {
-                    ...store,
+                ? { 
+                    ...store, 
                     price: newPrice,
                     tempPrice: undefined,
                     priceHistory: updatePriceHistory(store, newPrice)
-                }
-              : store
+                  }
+                : store
             )
           }
-         : part
-      ));
+        : part
+    ));
   };
 
   const handlePriceKeyDown = (
-    e: React.KeyBoardEvent<HTMLInputElement>,
+    e: React.KeyboardEvent<HTMLInputElement>,
     partId: string,
     storeId: string,
     value: string
-    ) => {
-      if (e.key === 'Enter') {
-        e.PreventDefault();
-        handlePriceUpdate(partId, storeId, value);
-        (e.target as HTMLIputElement).blur();
-      }
-    };
+  ) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handlePriceUpdate(partId, storeId, value);
+      (e.target as HTMLInputElement).blur();
+    }
+  };
 
   const toggleStock = (partId: string, storeId: string) => {
     setParts(parts.map(part =>
@@ -298,6 +344,20 @@ function App() {
               </p>
             </div>
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowLoadDialog(true)}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                title="Load Build"
+              >
+                <FolderOpen size={20} />
+              </button>
+              <button
+                onClick={() => setShowSaveDialog(true)}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                title="Save Build"
+              >
+                <Save size={20} />
+              </button>
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -392,13 +452,13 @@ function App() {
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`px-4 py-1 rounded-full text-sm font-medium ${
+                          className={`px-4 py-1 inline-block min-w-[120px] text-center rounded-full text-sm font-medium ${
                             getAvailabilityStatus(part.stores)
                               ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
                               : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
                           }`}
                         >
-                          {getAvailabilityStatus(part.stores) ? 'Available' : 'Not Available'}
+                          {getAvailabilityStatus(part.stores) ? 'Available' : 'Out of Stock'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{part.lastChecked}</td>
@@ -425,10 +485,10 @@ function App() {
                                     <div className="font-medium text-gray-900 dark:text-white">{store.name}</div>
                                     <input
                                       type="text"
-                                      className="mt-1 px-2 py-1 text-sm rounded border dark:bg-dark-gray-700 dark:border-gray-600 dark:text-white"
-                                      value={store.tempPrice !== undefined ? store.tempPrice: store.price}
+                                      className="mt-1 px-2 py-1 text-sm rounded border dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                      value={store.tempPrice !== undefined ? store.tempPrice : store.price}
                                       onChange={(e) => handlePriceInputChange(part.id, store.id, e.target.value)}
-                                      onBlure={(e) => handlePriceUpdate(part.id, store.id, e.currentTarget.value)}
+                                      onBlur={(e) => handlePriceUpdate(part.id, store.id, e.target.value)}
                                       onKeyDown={(e) => handlePriceKeyDown(e, part.id, store.id, e.currentTarget.value)}
                                       placeholder="$0.00"
                                     />
@@ -436,7 +496,7 @@ function App() {
                                   <div className="flex items-center gap-3">
                                     <button
                                       onClick={() => toggleStock(part.id, store.id)}
-                                      className={`px-4 py-1 rounded-full text-xs font-medium ${
+                                      className={`px-4 py-1 min-w-[120px] text-center rounded-full text-xs font-medium ${
                                         store.inStock
                                           ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
                                           : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
@@ -502,11 +562,11 @@ function App() {
                                   <input
                                     type="number"
                                     placeholder="Set price alert"
-                                    className="w-40 px-4 py-2 text-sm rounded border dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                                    className="w-full px-4 py-2 text-sm rounded border dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                                     value={store.priceAlert || ''}
                                     onChange={(e) => setPriceAlert(part.id, store.id, parseFloat(e.target.value))}
                                   />
-                                  <Bell size={16} className="text-gray-500 dark:text-gray-400" />
+                                  <Bell size={16} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
                                 </div>
                               </div>
                             ))}
@@ -529,6 +589,89 @@ function App() {
         </div>
       </div>
 
+      {/* Save Build Dialog */}
+      {showSaveDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Save Build</h2>
+            <input
+              type="text"
+              placeholder="Enter build name"
+              className="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              value={buildName}
+              onChange={(e) => setBuildName(e.target.value)}
+            />
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                onClick={() => setShowSaveDialog(false)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveBuild}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Load Build Dialog */}
+      {showLoadDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Load Build</h2>
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {savedBuilds.map(build => (
+                <div
+                  key={build.id}
+                  className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                >
+                  <div>
+                    <h3 className="font-medium text-gray-900 dark:text-white">{build.name}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Saved on {build.date}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {build.parts.length} parts - Total: ${build.parts.reduce((total, part) => {
+                        const bestPrice = parseFloat(getBestPrice(part.stores).replace('$', ''));
+                        return total + bestPrice;
+                      }, 0).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleLoadBuild(build)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      Load
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBuild(build.id)}
+                      className="px-4 py-2 text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {savedBuilds.length === 0 && (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-4">No saved builds found</p>
+              )}
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setShowLoadDialog(false)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAddForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full">
@@ -539,7 +682,7 @@ function App() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
                   <input
                     type="text"
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:text-white dark:placeholder-gray-400 px-4 py-2"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-4 py-2"
                     value={newPart.name || ''}
                     onChange={e => setNewPart({ ...newPart, name: e.target.value })}
                     required
@@ -548,7 +691,7 @@ function App() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Type</label>
                   <select
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:text-white px-4 py-2"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white px-4 py-2"
                     value={newPart.type}
                     onChange={e => setNewPart({ ...newPart, type: e.target.value })}
                   >
@@ -590,7 +733,7 @@ function App() {
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Store Name</label>
                           <input
                             type="text"
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:text-white dark:placeholder-gray-400 px-4 py-2"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-4 py-2"
                             value={store.name}
                             onChange={e => handleStoreChange(store.id, 'name', e.target.value)}
                             required
@@ -600,7 +743,7 @@ function App() {
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price</label>
                           <input
                             type="text"
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:text-white dark:placeholder-gray-400 px-4 py-2"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-4 py-2"
                             value={store.price}
                             onChange={e => handleStoreChange(store.id, 'price', e.target.value)}
                             placeholder="$0.00"
@@ -611,7 +754,7 @@ function App() {
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">URL</label>
                           <input
                             type="url"
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-600 dark:text-white dark:placeholder-gray-400 px-4 py-2"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-4 py-2"
                             value={store.url}
                             onChange={e => handleStoreChange(store.id, 'url', e.target.value)}
                             required
@@ -621,7 +764,7 @@ function App() {
                           <label className="flex items-center">
                             <input
                               type="checkbox"
-                              className="rounded border-gray-300 dark:border-gray-500 text-blue-600 focus:ring-blue-500 dark:bg-gray-600"
+                              className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:bg-gray-700"
                               checked={store.inStock}
                               onChange={e => handleStoreChange(store.id, 'inStock', e.target.checked)}
                             />
