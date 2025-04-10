@@ -486,7 +486,7 @@ function App() {
                                     <div className="font-medium text-gray-900 dark:text-white">{store.name}</div>
                                     <input
                                       type="text"
-                                      className="mt-1 px-2 py-1 text-sm rounded border dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                      className="mt-1 px-2 py-1 text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                       value={store.tempPrice !== undefined ? store.tempPrice : store.price}
                                       onChange={(e) => handlePriceInputChange(part.id, store.id, e.target.value)}
                                       onBlur={(e) => handlePriceUpdate(part.id, store.id, e.target.value)}
@@ -563,7 +563,7 @@ function App() {
                                   <input
                                     type="number"
                                     placeholder="Set price alert"
-                                    className="w-full px-4 py-2 text-sm rounded border dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                                    className="w-full px-4 py-2 text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     value={store.priceAlert || ''}
                                     onChange={(e) => setPriceAlert(part.id, store.id, parseFloat(e.target.value))}
                                   />
@@ -598,7 +598,7 @@ function App() {
             <input
               type="text"
               placeholder="Enter build name"
-              className="w-full px-4 py-2 rounded border dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={buildName}
               onChange={(e) => setBuildName(e.target.value)}
             />
@@ -683,7 +683,7 @@ function App() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
                   <input
                     type="text"
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-4 py-2"
+                    className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-900 dark:text-white px-4 py-2"
                     value={newPart.name || ''}
                     onChange={e => setNewPart({ ...newPart, name: e.target.value })}
                     required
@@ -692,7 +692,7 @@ function App() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Type</label>
                   <select
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white px-4 py-2"
+                    className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-900 dark:text-white px-4 py-2"
                     value={newPart.type}
                     onChange={e => setNewPart({ ...newPart, type: e.target.value })}
                   >
@@ -734,7 +734,7 @@ function App() {
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Store Name</label>
                           <input
                             type="text"
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-4 py-2"
+                            className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-900 dark:text-white px-4 py-2"
                             value={store.name}
                             onChange={e => handleStoreChange(store.id, 'name', e.target.value)}
                             required
@@ -744,7 +744,7 @@ function App() {
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price</label>
                           <input
                             type="text"
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-4 py-2"
+                            className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-900 dark:text-white px-4 py-2"
                             value={store.price}
                             onChange={e => handleStoreChange(store.id, 'price', e.target.value)}
                             placeholder="$0.00"
@@ -755,7 +755,7 @@ function App() {
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">URL</label>
                           <input
                             type="url"
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-4 py-2"
+                            className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-900 dark:text-white px-4 py-2"
                             value={store.url}
                             onChange={e => handleStoreChange(store.id, 'url', e.target.value)}
                             required
